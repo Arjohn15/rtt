@@ -1,55 +1,31 @@
-import CloseOutlinedIcon from '@mui/icons-material/CloseOutlined';
-import { useEffect, useRef} from 'react';
-import getStyles from '../functions/getStyles';
+import Drawer from '@mui/material/Drawer';
+import { NavLink } from "react-router-dom";
+export default function MobileSideBar({ sidebar, onClickSidebar }) {
 
-function MobileSideBar({ isSidebar, onClickSidebar }) {
-    const containerRef = useRef();
-
-    const { listStyle } = getStyles();
-    let darkBgStyle = "";
-    let navigationStyle = "";
-
-    if (isSidebar) {
-        navigationStyle = "translate-x-[0%]";
-        darkBgStyle += "bg-[rgba(0,0,0,0.5)] ";
-        darkBgStyle += "block";
-
-    } else {
-        navigationStyle = "translate-x-[-100%]";
-        darkBgStyle += "bg-[rgba(0,0,0,0)] ";
-        darkBgStyle += "hidden";
-
+    const onActiveLink = (isActive) => {
+        return `py-[1rem] w-full block ${isActive ? "text-red font-bold" : ""}`;
     }
-
-    useEffect(() => {
-        const handleClickOutside = (e) => {
-            if (containerRef.current && !containerRef.current.contains(e.target)) {
-                onClickSidebar(false);
-            }
-        }
-
-        document.addEventListener("mousedown", handleClickOutside);
-        return () =>  document.removeEventListener("mousedown", handleClickOutside);
-    }, [])
-
-    return (
-        <>
-            <div ref={containerRef} className={`${navigationStyle} duration-500 w-[60vw] h-[100vh] bg-white z-20 fixed top-0 font-arimo text-sm`}>
-            <button onClick={() => { onClickSidebar(false); }} className="absolute right-[0.5rem] top-[0.5rem]">
-                <CloseOutlinedIcon className="text-red" />
-            </button>
-            <ul className="w-full pt-[3rem]">
-                <li><a href="" className={listStyle}>Home</a></li>
-                <li><a href="" className={listStyle}>Contact</a></li>
-                <li><a href="" className={listStyle}>About</a></li>
+    const list = () => (
+        <div className="px-[1rem] font-arimo text-sm w-60 h-full border-red border-t-4 border-r-2">
+            <span className="text-xs block py-[1rem] font-bold border-[rgba(233,75,74,0.5)] border-b-[1px]">RescueTeamTaguig</span>
+            <ul className="mt-[1rem]">
+                <li><NavLink to="/" onClick={onClickSidebar("left", false)} className={({ isActive }) => onActiveLink(isActive)}>Home</NavLink></li>
+                <li><NavLink to="/about" onClick={onClickSidebar("left", false)} className={({ isActive }) => onActiveLink(isActive)}>About</NavLink></li>
+                <li><NavLink to="/contact" onClick={onClickSidebar("left", false)} className={({ isActive }) => onActiveLink(isActive)}>Contact</NavLink></li>
             </ul>
         </div>
-            <div className={`${darkBgStyle} w-[100vw] h-[100vh] fixed top-0 z-10`}>
-            </div>
-        </>
-
-
+    );
+    return (
+        <div className="lg:hidden">
+            {['left'].map((anchor) => (
+                <Drawer
+                    key={anchor}
+                    anchor={anchor}
+                    open={sidebar[anchor]}
+                    onClose={onClickSidebar(anchor, false)}>
+                    {list(anchor)}
+                </Drawer>
+            ))}
+        </div>
     );
 }
-
-export default MobileSideBar;

@@ -2,21 +2,34 @@ import { useState } from "react";
 import getStyles from "../../../functions/getStyles";
 import MobileSideBar from "../../../reusable_components/MobileSideBar";
 import HeaderMobileDynamic from "./HeaderMobileDynamic";
-
+import { useLocation } from "react-router-dom";
+import DashboardHeader from "../DashboardHeader";
 export default function HeaderMobile({ inView }) {
-    const [isSidebar, setIsSidebar] = useState(false); 
+    const [sidebar, setSidebar] = useState({
+        left: false,
+    });
+
+    const location = useLocation();
+
     const { fixedHeaderMobile } = getStyles(inView);
 
-    const handleSidebar = (isOpen) => {
-        setIsSidebar(isOpen)
-    }
+    const handleSidebar = (anchor, open) => (event) => {
+        if (event.type === 'keydown' && (event.key === 'Tab' || event.key === 'Shift')) {
+            return;
+        }
 
-    return (
-        <>
+        setSidebar({ ...sidebar, [anchor]: open });
+    };
+
+
+    if (location.pathname === "/dashboard") {
+        return <DashboardHeader/>
+    } else {
+        return <>
             <HeaderMobileDynamic onClickSidebar={handleSidebar} />
             <HeaderMobileDynamic onClickSidebar={handleSidebar} style={fixedHeaderMobile} />
-            <MobileSideBar isSidebar={isSidebar} onClickSidebar={handleSidebar} setIsSidebar={setIsSidebar} />
+            <MobileSideBar sidebar={sidebar} onClickSidebar={handleSidebar} />
         </>
-       
-    );
+    }
+
 }
