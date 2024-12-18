@@ -10,6 +10,21 @@ import ScrollToTop from "./reusable_components/ScrollToTop";
 import RequestRescuerInfo from "./reusable_components/RequestRescuerInfo";
 import DashBoard from "./pages/dashboard/DashBoard";
 
+fetch("https://localhost:44324/api/RescueTeam") // Replace with your API endpoint
+    .then((response) => {
+        if (!response.ok) {
+            throw new Error("Network response was not ok");
+        }
+        return response.json(); // Parse JSON data
+    })
+    .then((data) => {
+        console.log(data);
+    })
+    .catch((error) => {
+        console.log(error.message); // Handle error
+    });
+
+
 function App() {
     const { inView, ref } = useInView({ threshold: 0, initialInView: true });
 

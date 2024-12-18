@@ -1,4 +1,5 @@
 import { useState, Fragment } from 'react';
+import axios from 'axios';
 import Dialog from '@mui/material/Dialog';
 import RequestRescuerButton from './RequestRescuerButton';
 import FluentEmojiRescueWorkersHelmet from "./FluentEmojiRescueWorkersHelmet";
@@ -30,16 +31,18 @@ export default function RequestRescuerInfo() {
         setOpen(true);
     };
 
-    console.log(userInputs);
+    //console.log(userInputs);
     const handleClose = () => {
         setOpen(false);
     };
 
     const handleChange = (e) => {
         setUserInputs({ ...userInputs, [e.target.name]: e.target.value })
+        
     }
-
+    console.log(userInputs);
     const handleNeedsIDs = (id) => {
+
         const isNeed = userInputs.needsIDs.includes(id);
         if (!isNeed) {
             // ADD NEW NEED ID
@@ -56,6 +59,16 @@ export default function RequestRescuerInfo() {
         }
     }
 
+    const handleSendRequest = async (e) => {
+        e.preventDefault();
+        try {
+            const response = await axios.post('https://localhost:44324/api/RescueTeam', userInputs);
+            console.log(response.data); // Success message or data
+        }
+        catch (error) {
+            console.error('Error adding team:', error);
+        }
+    }
 
     if (location.pathname === "/dashboard") {
         return null;
@@ -124,7 +137,7 @@ export default function RequestRescuerInfo() {
                             <p className="text-[9px] text-center font-bold my-[0.5rem] md:text-[11px] lg:text-sm">
                                 Note: By clicking this button, you&rsquo;ll be asked to grant location access so we can send a rescuer to your exact position as quickly as possible.
                             </p>
-                            <button className="my-[1rem] text-red font-arimo font-bold flex items-center justify-self-center text-xs bg-white drop-shadow-xl p-[0.5rem] border-2 border-[rgba(233,75,74,0.5)] rounded-lg lg:text-base">
+                            <button onClick={handleSendRequest} className="my-[1rem] text-red font-arimo font-bold flex items-center justify-self-center text-xs bg-white drop-shadow-xl p-[0.5rem] border-2 border-[rgba(233,75,74,0.5)] rounded-lg lg:text-base">
                                 <div className="mr-[0.5rem]">
                                     <FluentEmojiRescueWorkersHelmet width={largeScreen ? "30" : "18"} />
                                 </div>
