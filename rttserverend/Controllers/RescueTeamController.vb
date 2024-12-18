@@ -1,6 +1,6 @@
 ﻿Imports System.Web.Http
 Imports System.Data.SqlClient
-
+Imports Newtonsoft.Json.Linq
 Public Class RescueTeamController
     Inherits ApiController
 
@@ -38,22 +38,27 @@ Public Class RescueTeamController
     ' POST: api/RescueTeam
     <HttpPost>
     Public Function CreateUserInfo(<FromBody> user As Object) As IHttpActionResult
+        ' Cast the received user object to JObject
+        Dim userData As JObject = CType(user, JObject)
+
+        ' Extract values from the JObject
+        Dim userName As String = userData("user_name").ToString()
+        Dim phoneNumber As String = userData("user_phoneNumber").ToString()
+        Dim additionalDescription As String = userData("user_additionalDescription").ToString()
+        Dim location As String = userData("location").ToString()
+        Dim needsIDs As String = String.Join(",", userData("needsIDs").ToObject(Of List(Of String))())
+        Dim others As String = userData("others").ToString()
+
         Using connection As New SqlConnection(connectionString)
             Dim query As String = "INSERT INTO Reqs.dbo.ReqsInfo (user_name, user_phoneNumber, user_additionalDescription, location, needsIDs, others) VALUES (@Name, @PhoneNumber, @AdditionalDescription, @Location, @NeedsIDs, @Others)"
             Dim command As New SqlCommand(query, connection)
-            'command.Parameters.AddWithValue("@Name", "Johnnny")
-            'command.Parameters.AddWithValue("@PhoneNumber", "0912345678")
-            'command.Parameters.AddWithValue("@AdditionalDescription", "John's additional desc")
-            'command.Parameters.AddWithValue("@Location", "dsadasdsa")
-            'command.Parameters.AddWithValue("@NeedsIDs", "[medical-10]") ' Convert list to comma-separated string
-            'command.Parameters.AddWithValue("@Others", "User's other needs")
-
-            'command.Parameters.AddWithValue("@Name", user.user_name)
-            'command.Parameters.AddWithValue("@PhoneNumber", user.user_phoneNumber)
-            'command.Parameters.AddWithValue("@AdditionalDescription", user.user_additionalDescription)
-            'command.Parameters.AddWithValue("@Location", user.location)
-            'command.Parameters.AddWithValue("@NeedsIDs", String.Join(",", user.needsIDs)) ' Convert list to comma-separated string
-            'command.Parameters.AddWithValue("@Others", user.others)
+            ' Add parameters using extracted values
+            command.Parameters.AddWithValue("@Name", userName)
+            command.Parameters.AddWithValue("@PhoneNumber", phoneNumber)
+            command.Parameters.AddWithValue("@AdditionalDescription", additionalDescription)
+            command.Parameters.AddWithValue("@Location", location)
+            command.Parameters.AddWithValue("@NeedsIDs", needsIDs)
+            command.Parameters.AddWithValue("@Others", others)
 
             connection.Open()
             Dim rowsAffected As Integer = command.ExecuteNonQuery()
@@ -65,6 +70,7 @@ Public Class RescueTeamController
             End If
         End Using
     End Function
+
 
     ' PUT: api/RescueTeam/5
     <HttpPut>
