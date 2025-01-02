@@ -3,7 +3,7 @@ Imports System.Web.Http.Cors
 Public Module WebApiConfig
     Public Sub Register(ByVal config As HttpConfiguration)
         ' Allow only specific origins, headers, and HTTP methods
-        Dim cors As New EnableCorsAttribute("http://localhost:5173", "*", "GET,POST,PUT,DELETE")
+        Dim cors As New EnableCorsAttribute("http://localhost:5173,http://localhost:5174,http://localhost:5175", "*", "GET,POST,PUT,DELETE")
         config.EnableCors(cors)
         ' Web API configuration and services
         config.Formatters.Remove(config.Formatters.XmlFormatter)

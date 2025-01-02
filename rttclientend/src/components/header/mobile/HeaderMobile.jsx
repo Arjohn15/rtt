@@ -23,8 +23,11 @@ export default function HeaderMobile({ inView }) {
 
 
     if (location.pathname === "/dashboard") {
-        return <DashboardHeader/>
-    } else {
+        return <DashboardHeader />
+    } else if (location.pathname === "/adminlogin") {
+        return;
+    }
+    else {
         return <>
             <HeaderMobileDynamic onClickSidebar={handleSidebar} />
             <HeaderMobileDynamic onClickSidebar={handleSidebar} style={fixedHeaderMobile} />

@@ -1,6 +1,7 @@
 ﻿Imports System.Web.Http
 Imports System.Data.SqlClient
 Imports Newtonsoft.Json.Linq
+Imports System.Diagnostics.Eventing
 Public Class RescueTeamController
     Inherits ApiController
 
@@ -25,7 +26,9 @@ Public Class RescueTeamController
                     .user_additionalDescription = reader("user_additionalDescription"),
                     .location = reader("location"),
                     .needsIDs = reader("needsIDs"),
-                    .others = reader("others")
+                    .others = reader("others"),
+                    .timestamp = reader("timestamp"),
+                    .status = reader("status")
                 })
             End While
 
@@ -48,58 +51,72 @@ Public Class RescueTeamController
         Dim location As String = userData("location").ToString()
         Dim needsIDs As String = String.Join(",", userData("needsIDs").ToObject(Of List(Of String))())
         Dim others As String = userData("others").ToString()
+        Dim timestamp As String = userData("timestamp").ToString()
+        Dim status As String = userData("status").ToString()
+
+        Dim allTeams As New List(Of Object)()
 
         Using connection As New SqlConnection(connectionString)
-            Dim query As String = "INSERT INTO Reqs.dbo.ReqsInfo (user_name, user_phoneNumber, user_additionalDescription, location, needsIDs, others) VALUES (@Name, @PhoneNumber, @AdditionalDescription, @Location, @NeedsIDs, @Others)"
-            Dim command As New SqlCommand(query, connection)
+            ' Insert the new record into the database
+            Dim insertQuery As String = "INSERT INTO Reqs.dbo.ReqsInfo (user_name, user_phoneNumber, user_additionalDescription, location, needsIDs, others, timestamp, status)" &
+                                    "VALUES (@Name, @PhoneNumber, @AdditionalDescription, @Location, @NeedsIDs, @Others, @Timestamp, @Status)"
+            Dim insertCommand As New SqlCommand(insertQuery, connection)
             ' Add parameters using extracted values
-            command.Parameters.AddWithValue("@Name", userName)
-            command.Parameters.AddWithValue("@PhoneNumber", phoneNumber)
-            command.Parameters.AddWithValue("@AdditionalDescription", additionalDescription)
-            command.Parameters.AddWithValue("@Location", location)
-            command.Parameters.AddWithValue("@NeedsIDs", needsIDs)
-            command.Parameters.AddWithValue("@Others", others)
+            insertCommand.Parameters.AddWithValue("@Name", userName)
+            insertCommand.Parameters.AddWithValue("@PhoneNumber", phoneNumber)
+            insertCommand.Parameters.AddWithValue("@AdditionalDescription", additionalDescription)
+            insertCommand.Parameters.AddWithValue("@Location", location)
+            insertCommand.Parameters.AddWithValue("@NeedsIDs", needsIDs)
+            insertCommand.Parameters.AddWithValue("@Others", others)
+            insertCommand.Parameters.AddWithValue("@Timestamp", timestamp)
+            insertCommand.Parameters.AddWithValue("@Status", status)
 
             connection.Open()
-            Dim rowsAffected As Integer = command.ExecuteNonQuery()
+            Dim rowsAffected As Integer = insertCommand.ExecuteNonQuery()
 
             If rowsAffected > 0 Then
-                Return Ok("Team created successfully.")
+                Return Ok("success")
             Else
                 Return BadRequest("Failed to create team.")
             End If
         End Using
     End Function
 
-
-    ' PUT: api/RescueTeam/5
+    ' PUT: api/RescueTeam
     <HttpPut>
-    Public Function UpdateTeam(id As Integer, <FromBody> team As Object) As IHttpActionResult
+    Public Function UpdateTeam(<FromBody> user As Object) As IHttpActionResult
+        ' Cast the received user object to JObject
+        Dim userData As JObject = CType(user, JObject)
+
+        ' Extract values from the JObject
+        Dim status As String = userData("status").ToString()
+        Dim timestamp As String = userData("timestamp").ToString()
+
+
         Using connection As New SqlConnection(connectionString)
-            Dim query As String = "UPDATE RescueTeams SET Name = @Name, Location = @Location WHERE Id = @Id"
+            Dim query As String = "UPDATE ReqsInfo SET status = @Status WHERE timestamp = @Timestamp"
             Dim command As New SqlCommand(query, connection)
-            command.Parameters.AddWithValue("@Name", team.Name)
-            command.Parameters.AddWithValue("@Location", team.Location)
-            command.Parameters.AddWithValue("@Id", id)
+            command.Parameters.AddWithValue("@Status", status)
+            command.Parameters.AddWithValue("@Timestamp", timestamp)
 
             connection.Open()
             Dim rowsAffected As Integer = command.ExecuteNonQuery()
 
             If rowsAffected > 0 Then
-                Return Ok("Team updated successfully.")
+                Return Ok("Requester status updated successfully.")
             Else
                 Return NotFound()
             End If
         End Using
     End Function
 
-    ' DELETE: api/RescueTeam/5
+    ' DELETE: api/RescueTeam/id
     <HttpDelete>
-    Public Function DeleteTeam(id As Integer) As IHttpActionResult
+    Public Function DeleteTeam(id As String) As IHttpActionResult
         Using connection As New SqlConnection(connectionString)
-            Dim query As String = "DELETE FROM RescueTeams WHERE Id = @Id"
+            Dim query As String = "DELETE FROM ReqsInfo WHERE timestamp = @Timestamp"
             Dim command As New SqlCommand(query, connection)
-            command.Parameters.AddWithValue("@Id", id)
+            command.Parameters.AddWithValue("@Timestamp", id)
 
             connection.Open()
             Dim rowsAffected As Integer = command.ExecuteNonQuery()

@@ -24,23 +24,21 @@ const needsLabels = [
 export default function RequestRescuerInfo() {
     const [open, setOpen] = useState(false);
     const [openOthers, setOpenOthers] = useState(false);
-    const [userInputs, setUserInputs] = useState({ user_name: "", user_phoneNumber: "", user_additionalDescription: "", location: "", needsIDs: [], others: "" });
+    const [userInputs, setUserInputs] = useState({ user_name: "", user_phoneNumber: "", user_additionalDescription: "", location: { lat: 0, lng: 0 }, needsIDs: [], others: "" });
     const largeScreen = useMediaQuery("(min-width:1024px)");
     const location = useLocation();
     const handleClickOpen = () => {
         setOpen(true);
     };
 
-    //console.log(userInputs);
     const handleClose = () => {
         setOpen(false);
     };
 
     const handleChange = (e) => {
         setUserInputs({ ...userInputs, [e.target.name]: e.target.value })
-        
+
     }
-    console.log(userInputs);
     const handleNeedsIDs = (id) => {
 
         const isNeed = userInputs.needsIDs.includes(id);
@@ -59,58 +57,86 @@ export default function RequestRescuerInfo() {
         }
     }
 
-    const handleSendRequest = async (e) => {
-        e.preventDefault();
+    const handleSendRequest = async (e, userLat, userLng) => {
+        e.preventDefault()
         try {
-            const response = await axios.post('https://localhost:44324/api/RescueTeam', userInputs);
-            console.log(response.data); // Success message or data
+            const currentTimestamp = Date.now();
+            const timestampString = currentTimestamp.toString();
+            const response = await axios.post('http://192.168.100.234:44324/api/RescueTeam', { ...userInputs, location: { lat: userLat, lng: userLng }, timestamp: timestampString, status: "new" });
+            handleClose();
+            setUserInputs({ user_name: "", user_phoneNumber: "", user_additionalDescription: "", location: { lat: 0, lng: 0 }, needsIDs: [], others: "" });
+            if (response.data === "success") {
+                alert("Request successfully sent. We will contact you from your provided phone number.");
+            } else {
+                alert("It seems like a problem occured. We advice you to try it again later.")
+            }
         }
         catch (error) {
             console.error('Error adding team:', error);
         }
+
     }
 
-    if (location.pathname === "/dashboard") {
-        return null;
+    const handleLocationAccess = (e) => {
+        e.preventDefault();
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition((pos) => {
+                handleSendRequest(e, pos.coords.latitude, pos.coords.longitude);
+            },
+                (err) => {
+                    if (err.code === err.PERMISSION_DENIED) {
+                        alert("Please allow access to your location to proceed")
+                    } else {
+                        console.error('Error obtaining location:', err);
+                    }
+                }
+            )
+        } else {
+            console.error('Geolocation is not supported by this browser.');
+        }
+    }
+
+    if (location.pathname === "/dashboard" || location.pathname === "/adminlogin") {
+        return;
     } else {
 
-    return (
-        <Fragment>
-            <RequestRescuerButton onClickOpen={handleClickOpen} />
+        return (
+            <Fragment>
+                <RequestRescuerButton onClickOpen={handleClickOpen} />
 
-            <Dialog
-                open={open}
-                onClose={handleClose}
-                aria-labelledby="alert-dialog-title"
-                aria-describedby="alert-dialog-description"
-                fullWidth={largeScreen}
-                maxWidth="lg"
-            >
-                <div className="relative p-[0.5rem] sm:p-[1rem]">
-                    <h3 className="text-lg text-center font-rowdies p-[1rem] lg:text-2xl lg:p-[2rem]">Tell us first what you need before we send rescuers...</h3>
-                    <div className="grid grid-rows-2 grid-flow-col justify-items-center justify-self-center w-[80%] h-max overflow-x-auto gap-x-5 px-[1rem] py-[0.5rem] rounded-lg shadow-inner border-2 border-[rgba(233,75,74,0.4)] lg:p-[1rem] lg:w-[60%]">
-                        {needsLabels.map((label) => {
-                            const isNeed = userInputs.needsIDs.includes(label.id);
-                            return (
-                                <div key={label.id} className="flex flex-col items-center mb-[0.5rem] lg:w-max lg:w-[80px]">
-                                    <button onClick={() => handleNeedsIDs(label.id)} className="relative w-[50px] h-[50px] border-gray-300 border-2 rounded-sm lg:w-[80px] lg:h-[80px]">
-                                        <img src={label.src} alt={label.name} width="100%" />
-                                        {isNeed &&
-                                            <div className="absolute top-[-5px] right-[-5px] flex bg-white rounded-full">
-                                                <CheckCircleIcon className="text-lime-600" style={{ fontSize: largeScreen ? "1.5rem" : "1rem" }} />
-                                            </div>
+                <Dialog
+                    open={open}
+                    onClose={handleClose}
+                    aria-labelledby="alert-dialog-title"
+                    aria-describedby="alert-dialog-description"
+                    fullWidth={largeScreen}
+                    maxWidth="md"
+                >
+                    <div className="relative p-[0.5rem] sm:p-[1rem]">
+                        <h3 className="text-lg text-center font-rowdies p-[1rem] lg:text-2xl lg:p-[2rem]">Tell us first what you need before we send rescuers...</h3>
+                        <div className="grid grid-rows-2 grid-flow-col justify-items-center justify-self-center w-[80%] h-max overflow-x-auto gap-x-5 px-[1rem] py-[0.5rem] rounded-lg shadow-inner border-2 border-[rgba(233,75,74,0.4)] lg:p-[1rem] lg:w-[60%]">
+                            {needsLabels.map((label) => {
+                                const isNeed = userInputs.needsIDs.includes(label.id);
+                                return (
+                                    <div key={label.id} className="flex flex-col items-center mb-[0.5rem] lg:w-max lg:w-[80px]">
+                                        <button onClick={() => handleNeedsIDs(label.id)} className="relative w-[50px] h-[50px] border-gray-300 border-2 rounded-sm lg:w-[80px] lg:h-[80px]">
+                                            <img src={label.src} alt={label.name} width="100%" />
+                                            {isNeed &&
+                                                <div className="absolute top-[-5px] right-[-5px] flex bg-white rounded-full">
+                                                    <CheckCircleIcon className="text-lime-600" style={{ fontSize: largeScreen ? "1.5rem" : "1rem" }} />
+                                                </div>
+                                            }
+                                        </button>
+                                        <span className="break-words text-center text-[9px] font-arimo font-bold lg:text-sm lg:mt-[0.5rem]">{label.labelName}</span>
+                                        {openOthers && label.id === "others-8" &&
+                                            <OthersLabel setOpenOthers={setOpenOthers} onChangeOthers={handleChange} othersValue={userInputs.others} />
                                         }
-                                    </button>
-                                    <span className="break-words text-center text-[9px] font-arimo font-bold lg:text-sm lg:mt-[0.5rem]">{label.labelName}</span>
-                                    {openOthers && label.id === "others-8" &&
-                                        <OthersLabel setOpenOthers={setOpenOthers} onChangeOthers={handleChange} othersValue={userInputs.others} />
-                                    }
-                                </div>
-                            )
-                        })}
+                                    </div>
+                                )
+                            })}
 
-                    </div>
-                    <form action="" className="font-arimo">
+                        </div>
+                        <form className="font-arimo">
                             <div className="text-xs mx-[1rem] mt-[2rem] lg:text-base">
                                 <div className="my-[1rem] lg:my-[2rem]">
                                     <label>
@@ -118,13 +144,13 @@ export default function RequestRescuerInfo() {
                                         <input onChange={handleChange} value={userInputs.user_name} type="text" name="user_name" placeholder="e.g. Johnny" required className="border-b-[1px] border-b-gray-300 " />
                                     </label>
                                 </div>
-                            <div className="my-[1rem] lg:my-[2rem]">
+                                <div className="my-[1rem] lg:my-[2rem]">
                                     <label>
                                         <span className="mr-[0.5rem] font-bold">Phone no:</span>
                                         <input onChange={handleChange} value={userInputs.user_phoneNumber} name="user_phoneNumber" type="tel" placeholder="e.g. 09123456789" required className="border-b-[1px] border-b-gray-300" />
                                     </label>
                                 </div>
-                            <div className="mt-[1rem] lg:my-[2rem]">
+                                <div className="mt-[1rem] lg:my-[2rem]">
                                     <label htmlFor="user_additionalDescription" className="w-max block my-[0.5rem] font-bold">
                                         Optional:
                                     </label>
@@ -133,24 +159,24 @@ export default function RequestRescuerInfo() {
                                     </textarea>
                                 </div>
                             </div>
-                        <div>
-                            <p className="text-[9px] text-center font-bold my-[0.5rem] md:text-[11px] lg:text-sm">
-                                Note: By clicking this button, you&rsquo;ll be asked to grant location access so we can send a rescuer to your exact position as quickly as possible.
-                            </p>
-                            <button onClick={handleSendRequest} className="my-[1rem] text-red font-arimo font-bold flex items-center justify-self-center text-xs bg-white drop-shadow-xl p-[0.5rem] border-2 border-[rgba(233,75,74,0.5)] rounded-lg lg:text-base">
-                                <div className="mr-[0.5rem]">
-                                    <FluentEmojiRescueWorkersHelmet width={largeScreen ? "30" : "18"} />
-                                </div>
-                                <span>Request now</span>
-                            </button>
-                        </div>
-                    </form>
-                    <button onClick={handleClose} className="absolute top-0 right-0">
-                        <CloseIcon  />
-                    </button>
-                </div>
-            </Dialog>
-        </Fragment>
-    );
+                            <div>
+                                <p className="text-[9px] text-center font-bold my-[0.5rem] md:text-[11px] lg:text-sm">
+                                    Note: By clicking this button, you agreed to provide your exact location so we can send a rescuer to your exact position as quickly as possible.
+                                </p>
+                                <button disabled={userInputs.user_name === "" || userInputs.user_phoneNumber === "" ? true : false} onClick={handleLocationAccess} className={`${userInputs.user_name === "" || userInputs.user_phoneNumber === "" ? "opacity-[0.7]" : "opacity-[1]"} my-[1rem] text-red font-arimo font-bold flex items-center justify-self-center text-xs bg-white drop-shadow-xl p-[0.5rem] border-2 border-[rgba(233,75,74,0.5)] rounded-lg lg:text-base`}>
+                                    <div className="mr-[0.5rem]">
+                                        <FluentEmojiRescueWorkersHelmet width={largeScreen ? "30" : "18"} />
+                                    </div>
+                                    <span>Request now</span>
+                                </button>
+                            </div>
+                        </form>
+                        <button onClick={handleClose} className="absolute top-0 right-0">
+                            <CloseIcon />
+                        </button>
+                    </div>
+                </Dialog>
+            </Fragment>
+        );
     }
 }
